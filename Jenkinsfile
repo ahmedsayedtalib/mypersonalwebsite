@@ -4,7 +4,7 @@ pipeline {
     environment {
         GITHUB_CRED       = 'github'
         SONAR_URL         = 'http://192.168.103.2:32000'
-        SONAR_CRED        = 'sonarqube'
+        SONAR_CRED        = 'sonarqube-cred'
         DOCKER_CRED       = 'docker-cred'
         PROJECT_ID        = 'first-cascade-473914-c1'
         REGION            = 'us-central1'
@@ -44,7 +44,7 @@ pipeline {
                             -Dsonar.sources=. \
                             -Dsonar.inclusions="**/*.html,**/*.css,**/*.js" \
                             -Dsonar.host.url=${SONAR_URL} \
-                            -Dsonar.login=${SONAR_TOKEN}
+                            -Dsonar.token=${SONAR_TOKEN}
                     """
                        }
                     }
