@@ -7,10 +7,10 @@ pipeline {
         SONAR_CRED        = 'sonarqube-cred'
         DOCKER_REPO       = 'ahmedsayedtalib'
         DOCKER_CRED       = 'docker-cred'
+        IMAGE_NAME        = 'mypersonalwebsite'
         PROJECT_ID        = 'first-cascade-473914-c1'
         REGION            = 'us-central1'
         ZONE              = 'us-central1-a'
-        IMAGE_NAME        = "personalwebsite"
         TF_BUCKET         = "ahmedsayed-cluster"
         TF_STATE_PREFIX   = "terraform/state"
         TERRAFORM_DIR     = "${WORKSPACE}/terraform"
@@ -59,14 +59,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    IMAGE_TAG = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    echo "🐳 Building Docker image: ${IMAGE_TAG}"
+                    def IMAGE_TAG = "${env.BUILD_NUMBER}"
+                    echo "🐳 Building Docker image: ${DOCKER_REPO}/${IMAGE_NAME}:${IMAGE_TAG}"
                 }
                 withCredentials([usernamePassword(credentialsId:"${DOCKER_CRED}", usernameVariable:"USER", passwordVariable:"PASSWORD")]) {
                     sh """
                         docker login -u ${USER} -p ${PASSWORD}
-                        docker build -t ${DOCKER_REPO}:${IMAGE_TAG} .
-                        docker push ${DOCKER_REPO}:${IMAGE_TAG}
+                        docker build -t ${DOCKER_REPO}/${IMAGE_NAME}:${IMAGE_TAG} .
+                        docker push ${DOCKER_REPO}/${IMAGE_NAME}:${IMAGE_TAG}
                     """
                 }
             }
@@ -79,9 +79,12 @@ pipeline {
         stage('Update Manifest Image Tag') {
             steps {
                 echo "✏️ Updating Kubernetes manifest with new image tag"
-                sh """
-                    sed -i "s|image:.*${IMAGE_NAME}.*|image: ${DOCKER_REPO}:${IMAGE_TAG}|g" ${K8S_DIR}/depl.yaml
-                """
+                script {
+                    def IMAGE_TAG = "${env.BUILD_NUMBER}"
+                    sh """
+                        sed -i "s|image:.*${IMAGE_NAME}.*|image: ${DOCKER_REPO}/${IMAGE_NAME}:${IMAGE_TAG}|g" ${K8S_DIR}/depl.yaml
+                    """
+                }
             }
             post {
                 success { echo "✅ Manifest updated with new image" }
@@ -94,7 +97,6 @@ pipeline {
                 echo "🔐 Logging into GCP and configuring credentials"
                 withCredentials([file(credentialsId:"${GCP_CRED}", variable:"GCP_KEY")]) {
                     script {
-                        // Export credentials for Terraform and gcloud
                         env.GOOGLE_APPLICATION_CREDENTIALS = "${GCP_KEY}"
                         sh """
                             gcloud auth activate-service-account --key-file=$GCP_KEY
