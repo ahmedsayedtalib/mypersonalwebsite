@@ -34,18 +34,20 @@ pipeline {
         }
 
         stage('Static Code Analysis') {
-            steps {
-                echo '🔍 Running SonarQube analysis'
-                withSonarQubeEnv('sonarqube') {
-                    withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
-                        sh """
-                         sonar-scanner/bin/sonar-scanner \
+    steps {
+        echo '🔍 Running SonarQube analysis'
+        withSonarQubeEnv('sonarqube') {
+            withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
+                script {
+                    def sonarHome = "sonar-scanner"
+                    sh """
+                        ${sonarHome}/bin/sonar-scanner \
                         -Dsonar.projectKey=${IMAGE_NAME} \
                         -Dsonar.sources=. \
                         -Dsonar.inclusions=**/*.html,**/*.css,**/*.js \
                         -Dsonar.host.url=${SONAR_URL} \
                         -Dsonar.login=$SONAR_TOKEN
-                        """
+                    """
                     }
                 }
                 echo '✅ SonarQube analysis successful'
