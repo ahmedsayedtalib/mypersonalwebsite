@@ -59,14 +59,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    IMAGE_FULL = "${DOCKER_REPO}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    echo "🐳 Building Docker image: ${IMAGE_FULL}"
+                    IMAGE_TAG = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo "🐳 Building Docker image: ${IMAGE_TAG}"
                 }
                 withCredentials([usernamePassword(credentialsId:"${DOCKER_CRED}", usernameVariable:"USER", passwordVariable:"PASSWORD")]) {
                     sh """
                         docker login -u ${USER} -p ${PASSWORD}
-                        docker build -t ${IMAGE_FULL} .
-                        docker push ${IMAGE_FULL}
+                        docker build -t ${DOCKER_REPO}:${IMAGE_TAG} .
+                        docker push ${DOCKER_REPO}:${IMAGE_TAG}
                     """
                 }
             }
@@ -80,12 +80,33 @@ pipeline {
             steps {
                 echo "✏️ Updating Kubernetes manifest with new image tag"
                 sh """
-                    sed -i "s|image:.*${IMAGE_NAME}.*|image: ${IMAGE_FULL}|g" ${K8S_DIR}/depl.yaml
+                    sed -i "s|image:.*${IMAGE_NAME}.*|image: ${DOCKER_REPO}:${IMAGE_TAG}|g" ${K8S_DIR}/depl.yaml
                 """
             }
             post {
                 success { echo "✅ Manifest updated with new image" }
                 failure { echo "❌ Failed to update manifest" }
+            }
+        }
+
+        stage('Login to GCP') {
+            steps {
+                echo "🔐 Logging into GCP and configuring credentials"
+                withCredentials([file(credentialsId:"${GCP_CRED}", variable:"GCP_KEY")]) {
+                    script {
+                        // Export credentials for Terraform and gcloud
+                        env.GOOGLE_APPLICATION_CREDENTIALS = "${GCP_KEY}"
+                        sh """
+                            gcloud auth activate-service-account --key-file=$GCP_KEY
+                            gcloud container clusters get-credentials ahmedsayed-cluster --zone ${ZONE} --project ${PROJECT_ID}
+                            kubectl config current-context
+                        """
+                    }
+                }
+            }
+            post {
+                success { echo "✅ GCP login successful" }
+                failure { echo "❌ GCP login failed" }
             }
         }
 
@@ -106,26 +127,9 @@ pipeline {
             }
         }
 
-        stage('Login to GCP') {
-            steps {
-                echo "🔐 Logging into GCP and configuring kubectl"
-                withCredentials([file(credentialsId:"${GCP_CRED}", variable:"GCP_KEY")]) {
-                    sh """
-                        gcloud auth activate-service-account --key-file=$GCP_KEY
-                        gcloud container clusters get-credentials ahmedsayed-cluster --zone ${ZONE} --project ${PROJECT_ID}
-                        kubectl config current-context
-                    """
-                }
-            }
-            post {
-                success { echo "✅ GCP login successful" }
-                failure { echo "❌ GCP login failed" }
-            }
-        }
-
         stage('Deploy to GKE') {
             steps {
-                echo "🚢 Deploying application to GKE directly via kubectl"
+                echo "🚢 Deploying application to GKE via kubectl"
                 sh """
                     kubectl apply -f ${K8S_DIR}/depl.yaml
                     kubectl apply -f ${K8S_DIR}/service.yaml
@@ -150,6 +154,7 @@ pipeline {
                 failure { echo "❌ Deployment verification failed" }
             }
         }
+
     }
 
     post {
