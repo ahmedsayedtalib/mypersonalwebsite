@@ -5,6 +5,7 @@ pipeline {
         GITHUB_CRED       = 'github'
         SONAR_URL         = 'http://192.168.103.2:32000'
         SONAR_CRED        = 'sonarqube-cred'
+        DOCKER_REPO       = 'ahmedsayedtalib'
         DOCKER_CRED       = 'docker-cred'
         PROJECT_ID        = 'first-cascade-473914-c1'
         REGION            = 'us-central1'
@@ -35,41 +36,37 @@ pipeline {
                 echo "🔍 Running SonarQube analysis"
                 withSonarQubeEnv('sonarqube') { 
                     withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
-                script {
-                    // Use the SonarQube scanner installation defined in Jenkins
-                    def scannerHome = tool 'sonar-scanner'
-                    sh """
-                        ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=mypersonalwebsite \
-                            -Dsonar.sources=. \
-                            -Dsonar.inclusions="**/*.html,**/*.css,**/*.js" \
-                            -Dsonar.host.url=${SONAR_URL} \
-                            -Dsonar.token=${SONAR_TOKEN}
-                    """
-                       }
+                        script {
+                            def scannerHome = tool 'sonar-scanner'
+                            sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                    -Dsonar.projectKey=mypersonalwebsite \
+                                    -Dsonar.sources=. \
+                                    -Dsonar.inclusions="**/*.html,**/*.css,**/*.js" \
+                                    -Dsonar.host.url=${SONAR_URL} \
+                                    -Dsonar.token=${SONAR_TOKEN}
+                            """
+                        }
                     }
                 }
             }
             post {
-                success {
-                    echo "✅ SonarQube analysis successful"
-                    }
-                failure {
-                    echo "❌ SonarQube analysis failed"
-                    }
-                }
+                success { echo "✅ SonarQube analysis successful" }
+                failure { echo "❌ SonarQube analysis failed" }
+            }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    IMAGE_TAG = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    echo "🐳 Building Docker image: ${IMAGE_TAG}"
+                    IMAGE_FULL = "${DOCKER_REPO}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo "🐳 Building Docker image: ${IMAGE_FULL}"
                 }
-                withDockerRegistry([credentialsId: "${DOCKER_CRED}", url: ""]) {
+                withCredentials([usernamePassword(credentialsId:"${DOCKER_CRED}", usernameVariable:"USER", passwordVariable:"PASSWORD")]) {
                     sh """
-                        docker build -t ${IMAGE_TAG} .
-                        docker push ${IMAGE_TAG}
+                        docker login -u ${USER} -p ${PASSWORD}
+                        docker build -t ${IMAGE_FULL} .
+                        docker push ${IMAGE_FULL}
                     """
                 }
             }
@@ -83,7 +80,7 @@ pipeline {
             steps {
                 echo "✏️ Updating Kubernetes manifest with new image tag"
                 sh """
-                    sed -i "s|image:.*${IMAGE_NAME}.*|image: ${IMAGE_TAG}|g" ${K8S_DIR}/depl.yaml
+                    sed -i "s|image:.*${IMAGE_NAME}.*|image: ${IMAGE_FULL}|g" ${K8S_DIR}/depl.yaml
                 """
             }
             post {
@@ -156,12 +153,8 @@ pipeline {
     }
 
     post {
-        success {
-            echo "🎉 Pipeline completed successfully!"
-        }
-        failure {
-            echo "💥 Pipeline failed. Check logs for errors."
-        }
+        success { echo "🎉 Pipeline completed successfully!" }
+        failure { echo "💥 Pipeline failed. Check logs for errors." }
         always {
             echo "🧹 Cleaning up Docker images and temporary resources"
             sh "docker system prune -f"
