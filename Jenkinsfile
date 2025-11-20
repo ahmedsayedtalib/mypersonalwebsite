@@ -33,26 +33,31 @@ pipeline {
             }
         }
 
-        stage('Static Code Analysis') {
-    steps {
-        echo '🔍 Running SonarQube analysis'
-        withSonarQubeEnv('sonarqube') {
-            withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
+       stage("SonarQube Static Code Analysis") {
+            steps {
                 script {
-                    def sonarHome = "sonar-scanner"
-                    sh """
-                        ${sonarHome}/bin/sonar-scanner \
-                        -Dsonar.projectKey=${IMAGE_NAME} \
-                        -Dsonar.sources=. \
-                        -Dsonar.inclusions=**/*.html,**/*.css,**/*.js \
-                        -Dsonar.host.url=${SONAR_URL} \
-                        -Dsonar.login=$SONAR_TOKEN
-                    """
+                    echo "Running SonarQube analysis..."
+
+                    // Path to Jenkins-installed SonarScanner tool
+                    def scannerHome = tool 'sonar-scanner'
+
+                    // Inject SonarQube environment variables
+                    withSonarQubeEnv('sonarqube') {
+                        withCredentials([string(credentialsId: SONAR_CRED, variable: "SONAR_TOKEN")]) {
+                            sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                  -Dsonar.projectKey=mypersonalwebsite \
+                                  -Dsonar.sources=. \
+                                  -Dsonar.inclusions=**/*.html,**/*.css,**/*.js \
+                                  -Dsonar.host.url=${SONARQUBE_HOST} \
+                                  -Dsonar.login=${SONAR_TOKEN}
+                            """
+                        }
                     }
                 }
-                echo '✅ SonarQube analysis successful'
-            }
-        } }
+        } 
+            echo '✅ SonarQube analysis successful'
+    }
 
         stage('Set Dynamic Environment Variables') {
             steps {
