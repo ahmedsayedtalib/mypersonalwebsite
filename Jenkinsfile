@@ -37,7 +37,7 @@ pipeline {
             steps {
                 echo '🔍 Running SonarQube analysis'
                 withSonarQubeEnv('sonarqube') {
-                    def sonarHome = "${sonar-scanner}"
+                    def sonarHome = "sonar-scanner"
                     withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
                         sh """
                         ${sonarHome}/bin/sonar-scanner \
