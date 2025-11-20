@@ -105,16 +105,20 @@ pipeline {
         }
 
         stage('Terraform Init & Apply') {
-            steps {
+    steps {
+        withCredentials([file(credentialsId: "${GCP_CRED}", variable: 'GCP_KEY')]) {
+            withEnv(["GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY"]) {
                 dir("${TERRAFORM_DIR}") {
                     sh """
                     terraform init -backend-config="bucket=${TF_BUCKET}" -backend-config="prefix=${TF_STATE_PREFIX}"
                     terraform apply -auto-approve
                     """
                 }
-                echo '✅ Terraform applied successfully'
             }
         }
+        echo '✅ Terraform applied successfully'
+    }
+}
 
         stage('Deploy to GKE') {
             steps {
