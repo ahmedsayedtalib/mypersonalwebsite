@@ -13,15 +13,11 @@ resource "google_compute_subnetwork" "subnet" {
 
 # GKE Cluster (Autopilot)
 resource "google_container_cluster" "gke_cluster" {
-  name     = "ahmedsayed-cluster"
-  location = var.zone
+  name             = "ahmedsayed-cluster"
+  location         = var.zone
+  networking_mode  = "VPC_NATIVE"
+  enable_autopilot = true
 
-  networking_mode = "VPC_NATIVE"
-
-  # Enable Autopilot
-autopilot {
-    enabled = true
-  }
 
   ip_allocation_policy {}
 

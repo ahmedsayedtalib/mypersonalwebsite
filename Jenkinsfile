@@ -25,9 +25,8 @@ pipeline {
                 git branch: 'main', credentialsId: "${GITHUB_CRED}", url: 'https://github.com/ahmedsayedtalib/mypersonalwebsite.git'
             }
             post {
-                success { echo "✅ Checkout successful!" }
-                failure { echo "❌ Checkout failed!" }
-                always { echo "⚠️ Checkout stage finished" }
+                success { echo "✅ Checkout successful" }
+                failure { echo "❌ Checkout failed" }
             }
         }
 
@@ -41,16 +40,15 @@ pipeline {
                                 -Dsonar.projectKey=mypersonalwebsite \
                                 -Dsonar.sources=. \
                                 -Dsonar.inclusions="**/*.html,**/*.css,**/*.js" \
-                                -Dsonar.host.url=$SONAR_HOST_URL \
+                                -Dsonar.host.url=$SONAR_URL \
                                 -Dsonar.login=$SONAR_TOKEN
                         """
                     }
                 }
             }
             post {
-                success { echo "✅ SonarQube analysis passed!" }
-                failure { echo "❌ SonarQube analysis failed!" }
-                always { echo "⚠️ SonarQube stage finished" }
+                success { echo "✅ SonarQube analysis passed" }
+                failure { echo "❌ SonarQube analysis failed" }
             }
         }
 
@@ -68,42 +66,21 @@ pipeline {
                 }
             }
             post {
-                success { echo "✅ Docker image built and pushed: ${IMAGE_TAG}" }
-                failure { echo "❌ Docker build or push failed!" }
-                always { echo "⚠️ Docker stage finished" }
+                success { echo "✅ Docker image built and pushed" }
+                failure { echo "❌ Docker build/push failed" }
             }
         }
 
         stage('Update Manifest Image Tag') {
             steps {
                 echo "✏️ Updating Kubernetes manifest with new image tag"
-                script {
-                    sh """
-                        sed -i "s|image:.*${IMAGE_NAME}.*|image: ${IMAGE_TAG}|g" ${K8S_DIR}/deployment.yaml
-                    """
-                }
+                sh """
+                    sed -i "s|image:.*${IMAGE_NAME}.*|image: ${IMAGE_TAG}|g" ${K8S_DIR}/depl.yaml
+                """
             }
             post {
-                success { echo "✅ Kubernetes manifest updated" }
-                failure { echo "❌ Updating manifest failed" }
-                always { echo "⚠️ Manifest update stage finished" }
-            }
-        }
-
-        stage('Prepare Terraform Backend') {
-            steps {
-                echo "🛠 Preparing Terraform backend bucket"
-                script {
-                    sh """
-                        gsutil ls -b gs://${TF_BUCKET} || gsutil mb -l ${REGION} gs://${TF_BUCKET}
-                        gsutil versioning set on gs://${TF_BUCKET}
-                    """
-                }
-            }
-            post {
-                success { echo "✅ Terraform backend prepared" }
-                failure { echo "❌ Terraform backend preparation failed" }
-                always { echo "⚠️ Terraform backend stage finished" }
+                success { echo "✅ Manifest updated with new image" }
+                failure { echo "❌ Failed to update manifest" }
             }
         }
 
@@ -119,9 +96,8 @@ pipeline {
                 }
             }
             post {
-                success { echo "✅ Terraform applied successfully!" }
-                failure { echo "❌ Terraform apply failed!" }
-                always { echo "⚠️ Terraform stage finished" }
+                success { echo "✅ Terraform applied successfully" }
+                failure { echo "❌ Terraform failed" }
             }
         }
 
@@ -132,43 +108,27 @@ pipeline {
                     sh """
                         gcloud auth activate-service-account --key-file=$GCP_KEY
                         gcloud container clusters get-credentials ahmedsayed-cluster --zone ${ZONE} --project ${PROJECT_ID}
+                        kubectl config current-context
                     """
                 }
             }
             post {
-                success { echo "✅ GCP login successful!" }
-                failure { echo "❌ GCP login failed!" }
-                always { echo "⚠️ GCP login stage finished" }
+                success { echo "✅ GCP login successful" }
+                failure { echo "❌ GCP login failed" }
             }
         }
 
-        stage('Deploy to GKE via ArgoCD') {
+        stage('Deploy to GKE') {
             steps {
-                echo "🚢 Deploying application via ArgoCD"
+                echo "🚢 Deploying application to GKE directly via kubectl"
                 sh """
-                    argocd app sync personalwebsite
-                    argocd app wait personalwebsite --health --timeout 300
+                    kubectl apply -f ${K8S_DIR}/depl.yaml
+                    kubectl apply -f ${K8S_DIR}/service.yaml
                 """
             }
             post {
-                success { echo "✅ ArgoCD deployment successful!" }
-                failure { echo "❌ ArgoCD deployment failed!" }
-                always { echo "⚠️ ArgoCD stage finished" }
-            }
-        }
-
-        stage('Install Monitoring (Prometheus & Grafana)') {
-            steps {
-                echo "📊 Installing Prometheus and Grafana"
-                sh """
-                    kubectl apply -f https://github.com/prometheus-operator/prometheus-operator/raw/main/bundle.yaml
-                    kubectl apply -f https://raw.githubusercontent.com/grafana/helm-charts/main/charts/grafana/templates/deployment.yaml
-                """
-            }
-            post {
-                success { echo "✅ Prometheus & Grafana installed successfully!" }
-                failure { echo "❌ Monitoring installation failed!" }
-                always { echo "⚠️ Monitoring stage finished" }
+                success { echo "✅ Application deployed to GKE" }
+                failure { echo "❌ Deployment to GKE failed" }
             }
         }
 
@@ -181,9 +141,8 @@ pipeline {
                 """
             }
             post {
-                success { echo "✅ Deployment verification passed!" }
-                failure { echo "❌ Deployment verification failed!" }
-                always { echo "⚠️ Verification stage finished" }
+                success { echo "✅ Deployment verification passed" }
+                failure { echo "❌ Deployment verification failed" }
             }
         }
     }
