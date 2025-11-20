@@ -38,9 +38,8 @@ pipeline {
                 echo '🔍 Running SonarQube analysis'
                 withSonarQubeEnv('sonarqube') {
                     withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
-                       def sonarHome = "sonar-scanner"
                         sh """
-                        ${sonarHome}/bin/sonar-scanner \
+                         sonar-scanner/bin/sonar-scanner \
                         -Dsonar.projectKey=${IMAGE_NAME} \
                         -Dsonar.sources=. \
                         -Dsonar.inclusions=**/*.html,**/*.css,**/*.js \
