@@ -37,8 +37,8 @@ pipeline {
             steps {
                 echo '🔍 Running SonarQube analysis'
                 withSonarQubeEnv('sonarqube') {
-                    def sonarHome = "sonar-scanner"
                     withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
+                       def sonarHome = "sonar-scanner"
                         sh """
                         ${sonarHome}/bin/sonar-scanner \
                         -Dsonar.projectKey=${IMAGE_NAME} \
