@@ -33,23 +33,31 @@ pipeline {
         stage('Static Code Analysis') {
             steps {
                 echo "🔍 Running SonarQube analysis"
-                withSonarQubeEnv('sonarqube') {
+                withSonarQubeEnv('sonarqube') { 
                     withCredentials([string(credentialsId: "${SONAR_CRED}", variable: "SONAR_TOKEN")]) {
-                        sh """
-                            sonar-scanner/bin/sonar-scanner \
-                                -Dsonar.projectKey=mypersonalwebsite \
-                                -Dsonar.sources=. \
-                                -Dsonar.inclusions="**/*.html,**/*.css,**/*.js" \
-                                -Dsonar.host.url=$SONAR_URL \
-                                -Dsonar.login=$SONAR_TOKEN
-                        """
+                script {
+                    // Use the SonarQube scanner installation defined in Jenkins
+                    def scannerHome = tool 'sonar-scanner'
+                    sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=mypersonalwebsite \
+                            -Dsonar.sources=. \
+                            -Dsonar.inclusions="**/*.html,**/*.css,**/*.js" \
+                            -Dsonar.host.url=${SONAR_URL} \
+                            -Dsonar.login=${SONAR_TOKEN}
+                    """
+                       }
                     }
                 }
             }
             post {
-                success { echo "✅ SonarQube analysis passed" }
-                failure { echo "❌ SonarQube analysis failed" }
-            }
+                success {
+                    echo "✅ SonarQube analysis successful"
+                    }
+                failure {
+                    echo "❌ SonarQube analysis failed"
+                    }
+                }
         }
 
         stage('Build Docker Image') {
