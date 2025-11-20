@@ -49,7 +49,7 @@ pipeline {
                                   -Dsonar.projectKey=mypersonalwebsite \
                                   -Dsonar.sources=. \
                                   -Dsonar.inclusions=**/*.html,**/*.css,**/*.js \
-                                  -Dsonar.host.url=${SONARQUBE_HOST} \
+                                  -Dsonar.host.url=${SONAR_URL} \
                                   -Dsonar.login=${SONAR_TOKEN}
                             """
                         }
