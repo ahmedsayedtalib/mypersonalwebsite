@@ -14,7 +14,7 @@ resource "google_compute_subnetwork" "subnet" {
 # GKE Cluster (Autopilot)
 resource "google_container_cluster" "gke_cluster" {
   name             = "ahmedsayed-cluster"
-  location         = var.zone
+  location         = var.region
   networking_mode  = "VPC_NATIVE"
   enable_autopilot = true
 
