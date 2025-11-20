@@ -33,7 +33,7 @@ pipeline {
             }
         }
 
-       stage("SonarQube Static Code Analysis") {
+        stage("SonarQube Static Code Analysis") {
             steps {
                 script {
                     echo "Running SonarQube analysis..."
@@ -54,10 +54,10 @@ pipeline {
                             """
                         }
                     }
+                    echo '✅ SonarQube analysis successful'
                 }
-        } 
-            echo '✅ SonarQube analysis successful'
-    }
+            }
+        }
 
         stage('Set Dynamic Environment Variables') {
             steps {
