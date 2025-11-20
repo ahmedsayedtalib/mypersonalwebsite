@@ -52,7 +52,7 @@ pipeline {
                 }
                 echo '✅ SonarQube analysis successful'
             }
-        }
+        } }
 
         stage('Set Dynamic Environment Variables') {
             steps {
