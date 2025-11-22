@@ -72,19 +72,6 @@ pipeline {
             }
         }
 
-        stage('Login to GCP') {
-            steps {
-                withCredentials([file(credentialsId:GCP_CRED, variable: 'GCP_KEY')]) {
-                    sh """
-                    gcloud auth activate-service-account --key-file=${GCP_KEY}
-                    gcloud config set project ${PROJECT_ID}
-                    gcloud container clusters get-credentials --region=${GKE_REGION} --project=${GCP_PROJECT_ID}
-                    """
-                }
-                echo '✅ GCP login successful'
-            }
-        }
-
         stage('Terraform Init & Apply') {
             steps {
                 script {
@@ -92,8 +79,11 @@ pipeline {
                         withCredentials([file(credentialsId:GCP_CRED, variable: 'GCP_KEY')]) {
                             withEnv(["GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY"]) {
                                 sh """
+                                gcloud auth activate-service-account --key-file=${GCP_KEY}
+                                gcloud config set project ${PROJECT_ID}
                                 terraform init -backend-config="bucket=${TF_BUCKET}" -backend-config="prefix=${TF_STATE_PREFIX}"
                                 terraform apply -auto-approve
+                                gcloud container clusters get-credentials --region=${GKE_REGION} --project=${GCP_PROJECT_ID}
                                 """
                             }
                         }
@@ -102,7 +92,6 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy to GKE') {
             steps {
                 dir(K8S_DIR) {
