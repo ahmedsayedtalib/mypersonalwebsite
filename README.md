@@ -89,14 +89,16 @@ Checks all pods, services, and deployments in the default namespace.
 ## 🔑 Credentials & Access
 
 The Jenkins service account used for GCP operations has the following roles:
+🔑Artifact Registry Administrator
+🔑Artifact Registry Create-on-Push Repository Administrator
+🔑Compute Admin
+🔑Compute Network Admin
+🔑Kubernetes Engine Cluster Admin
+🔑Service Account User
+🔑Storage Admin 
 
-roles/artifactregistry.admin 🐳
 
-roles/artifactregistry.createOnPushWriter 🐳
-
-roles/container.admin 🚀
-
-roles/storage.admin ☁️
+roles/iam.serviceAccountUser🔑
 
 These roles are sufficient for pushing images, managing clusters, and reading/writing to GCS.
 

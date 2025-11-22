@@ -83,7 +83,7 @@ pipeline {
                                 gcloud config set project ${PROJECT_ID}
                                 terraform init -backend-config="bucket=${TF_BUCKET}" -backend-config="prefix=${TF_STATE_PREFIX}"
                                 terraform apply -auto-approve
-                                gcloud container clusters get-credentials --region=${GKE_REGION} --project=${GCP_PROJECT_ID}
+                                gcloud container clusters get-credentials ${TF_BUCKET} --region=${GKE_REGION} --project=${GCP_PROJECT_ID}
                                 """
                             }
                         }
