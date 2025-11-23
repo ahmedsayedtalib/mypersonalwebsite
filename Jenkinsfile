@@ -97,23 +97,48 @@ pipeline {
                 dir(K8S_DIR) {
                     sh "kubectl apply -f ."
                 }
-                sh "kubectl get pods -o wide"
+                sh "kubectl wait --for=condition=ready pod -l app=mypersonalwebsite --timeout=120s kubectl get pods -o wide"
                 echo '✅ Kubernetes deployment applied'
             }
         }
 
         stage('Smoke Test') {
-            steps {
-                script {
-                    echo '🔍 Running smoke test...'
-                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://<your-app-url>", returnStdout: true).trim()
-                    if (response != '200') {
-                        error "Smoke test failed! Expected HTTP 200 but got ${response}"
-                    }
-                    echo '✅ Smoke test passed'
+    steps {
+        script {
+            echo '🔍 Running smoke test...'
+
+            // Wait up to 2 minutes for LoadBalancer IP to be assigned
+            def externalIp = ''
+            timeout(time: 2, unit: 'MINUTES') {
+                waitUntil {
+                    externalIp = sh(
+                        script: "kubectl get svc mypersonalwebsite-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+                        returnStdout: true
+                    ).trim()
+                    return externalIp != ''
                 }
             }
+
+            echo "Service external IP: ${externalIp}"
+
+            // Wait a few more seconds for pods to be ready
+            sh "kubectl wait --for=condition=ready pod -l app=mypersonalwebsite --timeout=60s"
+
+            // Curl the service
+            def response = sh(
+                script: "curl -s -o /dev/null -w '%{http_code}' http://${externalIp}",
+                returnStdout: true
+            ).trim()
+
+            if (response != '200') {
+                error "Smoke test failed! Expected HTTP 200 but got ${response}"
+            }
+
+            echo '✅ Smoke test passed'
         }
+    }
+}
+
     }
 
     post {
