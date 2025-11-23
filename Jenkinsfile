@@ -97,6 +97,7 @@ pipeline {
                 dir(K8S_DIR) {
                     sh "kubectl apply -f ."
                 }
+                sh "kubectl get pods -o wide"
                 echo '✅ Kubernetes deployment applied'
             }
         }
