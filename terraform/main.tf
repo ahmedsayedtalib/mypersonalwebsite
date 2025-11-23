@@ -33,11 +33,11 @@ resource "google_container_cluster" "ahmedsayed-cluster" {
   }
 }
 
-resource "google_storage_bucket" "bucket" {
-  name     = var.tf_bucket_name
-  location = var.region
+# resource "google_storage_bucket" "bucket" {
+#   name     = var.tf_bucket_name
+#   location = var.region
 
-  lifecycle {
-    prevent_destroy = true
-  }
-}
+#   lifecycle {
+#     prevent_destroy = true
+#   }
+# }
