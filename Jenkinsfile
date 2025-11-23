@@ -97,7 +97,8 @@ pipeline {
                 dir(K8S_DIR) {
                     sh "kubectl apply -f ."
                 }
-                sh "kubectl wait --for=condition=ready pod -l app=mypersonalwebsite --timeout=120s kubectl get pods -o wide"
+                sh "kubectl wait --for=condition=ready pod -l app=mypersonalwebsite --timeout=120s"
+                sh " kubectl get pods -o wide"
                 echo '✅ Kubernetes deployment applied'
             }
         }
