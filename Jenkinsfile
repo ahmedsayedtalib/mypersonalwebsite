@@ -108,9 +108,9 @@ pipeline {
         script {
             echo '🔍 Running smoke test...'
 
-            // Wait up to 10 minutes for LoadBalancer IP to be assigned
+            // Wait up to 15 minutes for LoadBalancer IP to be assigned
             def externalIp = ''
-            timeout(time: 10, unit: 'MINUTES') {
+            timeout(time: 15, unit: 'MINUTES') {
                 waitUntil {
                     externalIp = sh(
                         script: "kubectl get svc mypersonalwebsite-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
