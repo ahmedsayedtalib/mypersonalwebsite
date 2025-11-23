@@ -30,7 +30,7 @@ metadata:
 spec:
   selector:
     app: mypersonalwebsite
-  type: NodePort
+  type: LoadBalancer
   ports:
   - protocol: TCP
     port: 80
